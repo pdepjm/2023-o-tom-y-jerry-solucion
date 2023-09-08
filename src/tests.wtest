@@ -1,0 +1,148 @@
+import casa.*
+import cuidadores.*
+import quilomberos.*
+
+describe "Tom" {
+	
+	test "Al limpiar la casa reduce la suciedad en 100" {
+		const suciedadInicial = casa.suciedad() // Una forma de no tener que depender de los valores iniciales del objeto.
+		tom.limpiarCasa()
+		assert.equals(suciedadInicial - 100, casa.suciedad())
+	}
+	
+	test "Al limpiar la casa pierde 40 de energía" {
+		const energiaInicial = tom.energia()
+		tom.limpiarCasa()
+		assert.equals(energiaInicial - 40, tom.energia())
+	}
+	
+	test "Puede atrapar a un quilombero si es más rápido que él" {
+		tom.incrementarEnergia(100)
+		assert.that(tom.puedeAtrapar(tuffy))
+	}
+	
+	// Es importante testear por el caso contrario tambien. 
+	test "No puede atrapar a un quilombero si no es más rápido que él" {
+		tom.reducirEnergia(100)
+		assert.notThat(tom.puedeAtrapar(tuffy)) //El notThat funciona como el that, solo que espera false en vez de true
+	}
+	
+	test "Al dormir incrementa su energía en 50" {
+		const energiaInicial = tom.energia()
+		tom.dormir()
+		assert.equals(energiaInicial + 50, tom.energia())
+	}
+	
+	test "Al tener su sueño interrumpido pierde 20 de energia" {
+		const energiaInicial = tom.energia()
+		tom.interrumpirSuenio()
+		assert.equals(energiaInicial - 20, tom.energia())
+	}
+	
+	test "La velocidad es 5 + (energía / 10)" {
+		const energia = tom.energia()
+		assert.equals(5 + energia / 10, tom.velocidad()) 
+	}
+	
+}
+
+describe "Jerry" {
+	test "Al hacer quilombo ensucia la casa en 110" {
+		const suciedadInicial = casa.suciedad()
+		jerry.hacerQuilombo()
+		assert.equals(suciedadInicial + 110, casa.suciedad())
+	}
+	
+	test "Al hacer quilombo aumenta en 1 el peso" {
+		const pesoInicial = jerry.peso()
+		jerry.hacerQuilombo()
+		assert.equals(pesoInicial + 1, jerry.peso())
+	}
+	
+	test "La velocidad es 10 - peso" {
+		const peso = jerry.peso()
+		assert.equals(10 - peso, jerry.velocidad())
+	}
+}
+
+describe "Tuffy" {
+	
+	test "La velocidad es 10" { 
+		// Se puede debatir el valor de este test, pero al empezar a aprender a testear
+		// es preferible testear de mas que de menos.
+		assert.equals(10, tuffy.velocidad())
+	}
+	
+	test "Al hacer quilombo interrumpe el sueño del cuidador de la casa" {
+		casa.cuidador(tom) //De esta forma el test sigue andando incluso si cambia el valor inicial del cuidador en la casa
+		const energiaInicial = tom.energia()
+		tuffy.hacerQuilombo()
+		assert.equals(energiaInicial - 20, tom.energia()) //Por lo tanto este test asume que el test de sueño interrumpido de tom anda bien		
+	}
+}
+
+describe "Robocat"{
+	
+	test "Al limpiar la casa la deja totalmente limpia" {
+		casa.ensuciarse(200) // Para asegurar que tenga un valor distinto a 0
+		roboCat.limpiarCasa()
+		assert.equals(0, casa.suciedad())
+	}
+	
+	test "Siempre puede atrapar a cualquier quilombero"{
+		// Este test tambien se puede debatir su valor
+		assert.that(roboCat.puedeAtrapar(jerry))
+	}
+	
+	// Los metodos de dormirse y tener el sueño interrumpido no hacen nada
+	// y es muy dificil testear que "no pasa nada" en este dominio.
+	// Teoricamente se podria verificar que el estado de todos los objetos que existen
+	// sean igual antes y despues de enviar estos mensajes, osea que no cambió nada, pero seria inmantenible.
+	// El costo de hacer y mantener estos tests seria mas alto que el costo de que estos metodos anden mal,
+	// por lo que no tiene sentido hacerlos.
+}
+
+describe "Casa" {
+	
+	test "Cuando pasa el día el cuidador limpia la casa" {
+		const suciedadInicial = casa.suciedad()
+		casa.cuidador(tom)
+		
+		casa.pasarElDia()
+		assert.equals(suciedadInicial - 100, casa.suciedad()) // Este test tambien asume que el test de tom de limpiar la casa anda bien.
+	}
+	
+	test "Cuando pasa el dia el cuidador saca al quilombero si puede atraparlo" {
+		casa.cuidador(tom)
+		casa.quilombero(tuffy)
+		tom.incrementarEnergia(200)
+		
+		casa.pasarElDia()
+		assert.equals(quilomberoNulo, casa.quilombero())
+	}
+	
+	test "Cuando pasa el dia el cuidador no saca al quilombero si no puede atraparlo" {
+		casa.cuidador(tom)
+		casa.quilombero(tuffy)
+		tom.reducirEnergia(200)
+		
+		casa.pasarElDia()
+		assert.equals(tuffy, casa.quilombero())
+	}
+	
+	test "Cuando pasa la noche el cuidador duerme" {
+		const energiaInicial = tom.energia()
+		casa.cuidador(tom)
+		
+		casa.pasarLaNoche()
+		assert.equals(energiaInicial + 50, tom.energia())
+	}
+	
+	test "Cuando pasa la noche el quilombero hace quilombo" {
+		const suciedadInicial = casa.suciedad()
+		casa.quilombero(jerry)
+		
+		casa.pasarLaNoche()
+		assert.equals(suciedadInicial + 110, casa.suciedad())
+	}
+}
